@@ -283,6 +283,110 @@
       color: #FFFFFF;
     }
 
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(var(--backdrop-blur));
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .icon-btn:hover,
+    .icon-btn.active {
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      background: var(--accent-soft);
+    }
+
+    /* ===== AI Settings Drawer ===== */
+    .settings-drawer {
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border-strong);
+      border-radius: var(--radius-box);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    }
+
+    .settings-drawer[hidden] {
+      display: none;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 720px) {
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .field-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+    }
+
+    .field-input {
+      border: 1.5px solid var(--surface-border);
+      background: var(--surface-soft);
+      border-radius: 11px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--ink-primary);
+      outline: none;
+    }
+
+    .field-input:focus {
+      border-color: var(--accent);
+    }
+
+    .settings-actions {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .settings-btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .settings-meta {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
     /* ===== Hero Search ===== */
     .hero-search {
       text-align: center;
@@ -756,6 +860,7 @@
       <div class="header-right">
         <span class="status-pill" id="aiPill"><span class="dot" id="aiDot"></span>ローカルAI確認中…</span>
         <span class="status-pill" id="countPill">📚 0件</span>
+        <button type="button" class="icon-btn" id="settingsToggleBtn" title="Ollama / LM Studio / llama-server 接続設定">⚙️ AI設定</button>
 
         <div class="theme-pills" role="group" aria-label="テーマ切替">
           <button type="button" class="theme-pill-btn" data-set-theme="glass">✨ Glass</button>
@@ -764,6 +869,51 @@
         </div>
       </div>
     </header>
+
+    <!-- AI Provider Settings Drawer -->
+    <section class="settings-drawer" id="settingsDrawer" hidden>
+      <div class="panel-title">
+        <span>🤖 ローカル AI 接続設定（Ollama / LM Studio / llama-server / OpenAI互換）</span>
+        <span class="panel-hint">設定は data/ai_config.json に自動保存・モデル別にベクトル空間を分離します</span>
+      </div>
+      <div class="settings-grid">
+        <div class="field-group full">
+          <label class="field-label" for="presetSelect">接続プリセット</label>
+          <select id="presetSelect" class="field-input">
+            <option value="aria_local">🌸 Aria Local（Port 1919 Embed ＋ Port 1918 LLM）</option>
+            <option value="ollama">🦙 Ollama（http://127.0.0.1:11434）</option>
+            <option value="lmstudio">🎛️ LM Studio（http://127.0.0.1:1234）</option>
+            <option value="custom">⚡ カスタム OpenAI 互換（llama-server / vLLM 等）</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="embedUrlInput">Embedding サーバー URL（意味検索用）</label>
+          <input type="text" id="embedUrlInput" class="field-input" placeholder="http://127.0.0.1:11434" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="embedModelInput">Embedding モデル名（llama-serverは空欄可）</label>
+          <input type="text" id="embedModelInput" class="field-input" list="embedModelList" placeholder="例: nomic-embed-text / bge-m3 / embeddinggemma" />
+          <datalist id="embedModelList"></datalist>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="llmUrlInput">Chat LLM サーバー URL（リランク・AI要約用）</label>
+          <input type="text" id="llmUrlInput" class="field-input" placeholder="http://127.0.0.1:11434" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="llmModelInput">Chat モデル名（llama-serverは空欄可）</label>
+          <input type="text" id="llmModelInput" class="field-input" list="llmModelList" placeholder="例: gemma3:4b / qwen2.5:7b" />
+          <datalist id="llmModelList"></datalist>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <span class="settings-meta" id="vecSpaceMeta">ベクトル空間: embeddings.npz</span>
+        <div class="settings-btn-row">
+          <button type="button" class="btn-outline" id="fetchModelsBtn">🔍 モデル一覧を取得</button>
+          <button type="button" class="btn-outline" id="reindexBtn">🔄 このモデルでベクトル化</button>
+          <button type="button" class="btn-soft" id="saveSettingsBtn">💾 設定を保存</button>
+        </div>
+      </div>
+    </section>
 
     <!-- Hero Search -->
     <section class="hero-search">
@@ -778,7 +928,7 @@
           placeholder="例：こないだ見た健康と広告の話、Python速くするやつ… (Ctrl+K)"
           autocomplete="off"
         />
-        <button type="button" id="rerankBtn" class="rerank-toggle active" title="Port 1918 ローカル金魚リランク">
+        <button type="button" id="rerankBtn" class="rerank-toggle active" title="ローカルLLM精密リランク (Ollama / LM Studio / Port 1918)">
           🐠 AI精密リランク ON
         </button>
         <button type="submit" class="search-btn">思い出す</button>
@@ -914,14 +1064,17 @@
           ? `AI要約中… ${st.enrich_state.done}/${st.enrich_state.total} (${st.enrich_state.last_title})`
           : `AI要約済み ${st.enriched_pct}% (${st.enriched}/${st.total})`;
 
-        const ok1919 = st.servers.embed_1919;
-        const ok1918 = st.servers.llm_1918;
-        if (ok1919 && ok1918) {
-          aiPill.innerHTML = `<span class="dot"></span>完全ローカルAI稼働（1919＋1918）`;
-        } else if (ok1919) {
-          aiPill.innerHTML = `<span class="dot"></span>ベクトル検索稼働（Port 1919）`;
+        const okEmbed = st.servers.embed ?? st.servers.embed_1919;
+        const okLlm = st.servers.llm ?? st.servers.llm_1918;
+        const aiLabel = st.ai_label || "ローカルAI";
+        if (okEmbed && okLlm) {
+          aiPill.innerHTML = `<span class="dot"></span>${escapeHtml(aiLabel)} フル稼働`;
+        } else if (okEmbed) {
+          aiPill.innerHTML = `<span class="dot"></span>${escapeHtml(aiLabel)} 意味検索稼働`;
+        } else if (okLlm) {
+          aiPill.innerHTML = `<span class="dot"></span>${escapeHtml(aiLabel)} LLM稼働`;
         } else {
-          aiPill.innerHTML = `<span class="dot warn"></span>軽量オフライン検索モード`;
+          aiPill.innerHTML = `<span class="dot warn"></span>軽量オフライン検索（${escapeHtml(aiLabel)}未接続）`;
         }
 
         if (st.enrich_state.running && !enrichPollTimer) {
@@ -952,8 +1105,10 @@
     function renderCards(items, elapsedMs, mode, q) {
       const modeLabel = {
         recent: "新着順",
+        "hybrid_dense_sparse+llm_rerank": "ハイブリッド＋AI精密リランク",
         "hybrid_dense_sparse+1918_rerank": "ハイブリッド＋AI精密リランク",
         hybrid_dense_sparse: "ハイブリッド意味検索",
+        "sparse_only+llm_rerank": "キーワード＋AI精密リランク",
         sparse_only: "軽量日本語キーワード検索",
         empty: "記憶庫は空です",
       }[mode] || mode;
@@ -1150,6 +1305,119 @@
       const data = await res.json();
       showToast(`✨ ${data.message}`);
       if (data.started) startEnrichPolling();
+    });
+
+    // ===== AI Provider Settings =====
+    let aiPresets = {};
+    const settingsToggleBtn = document.getElementById("settingsToggleBtn");
+    const settingsDrawer = document.getElementById("settingsDrawer");
+    const presetSelect = document.getElementById("presetSelect");
+    const embedUrlInput = document.getElementById("embedUrlInput");
+    const embedModelInput = document.getElementById("embedModelInput");
+    const llmUrlInput = document.getElementById("llmUrlInput");
+    const llmModelInput = document.getElementById("llmModelInput");
+    const vecSpaceMeta = document.getElementById("vecSpaceMeta");
+
+    async function loadAiConfig() {
+      try {
+        const res = await fetch("/api/config");
+        const data = await res.json();
+        aiPresets = data.presets || {};
+        const cfg = data.config || {};
+        presetSelect.value = cfg.preset || "aria_local";
+        embedUrlInput.value = cfg.embed_url || "";
+        embedModelInput.value = cfg.embed_model || "";
+        llmUrlInput.value = cfg.llm_url || "";
+        llmModelInput.value = cfg.llm_model || "";
+        const dimTxt = data.vector_dim ? ` / ${data.vector_dim}次元` : "";
+        vecSpaceMeta.textContent = `ベクトル空間: ${data.vector_file || "embeddings.npz"}${dimTxt}`;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    settingsToggleBtn.addEventListener("click", async () => {
+      const nextHidden = !settingsDrawer.hidden;
+      settingsDrawer.hidden = nextHidden;
+      settingsToggleBtn.classList.toggle("active", !nextHidden);
+      if (!nextHidden) await loadAiConfig();
+    });
+
+    presetSelect.addEventListener("change", () => {
+      const p = aiPresets[presetSelect.value];
+      if (!p) return;
+      embedUrlInput.value = p.embed_url || "";
+      embedModelInput.value = p.embed_model || "";
+      llmUrlInput.value = p.llm_url || "";
+      llmModelInput.value = p.llm_model || "";
+    });
+
+    document.getElementById("fetchModelsBtn").addEventListener("click", async e => {
+      const btn = e.currentTarget;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "取得中…";
+      try {
+        const urls = Array.from(new Set([embedUrlInput.value.trim(), llmUrlInput.value.trim()].filter(Boolean)));
+        const allModels = new Set();
+        for (const u of urls) {
+          const r = await fetch(`/api/models?url=${encodeURIComponent(u)}`);
+          const d = await r.json();
+          if (d.ok && Array.isArray(d.models)) {
+            d.models.forEach(m => allModels.add(m));
+          }
+        }
+        const optsHtml = Array.from(allModels).map(m => `<option value="${escapeHtml(m)}"></option>`).join("");
+        document.getElementById("embedModelList").innerHTML = optsHtml;
+        document.getElementById("llmModelList").innerHTML = optsHtml;
+        if (allModels.size > 0) {
+          showToast(`🔍 ${allModels.size}件のモデルを検出しました！入力欄の候補から選べます✨`);
+        } else {
+          showToast("⚠️ モデル一覧が取得できませんでした（URLとサーバー起動を確認してください）");
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    });
+
+    document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+      const body = {
+        preset: presetSelect.value,
+        embed_url: embedUrlInput.value.trim(),
+        embed_model: embedModelInput.value.trim(),
+        llm_url: llmUrlInput.value.trim(),
+        llm_model: llmModelInput.value.trim(),
+      };
+      const res = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        await loadAiConfig();
+        await refreshStatus();
+        await runSearch();
+        showToast("💾 AI接続設定を保存しました！モデル変更時は「🔄 このモデルでベクトル化」を押してください✨");
+      }
+    });
+
+    document.getElementById("reindexBtn").addEventListener("click", async e => {
+      const btn = e.currentTarget;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "ベクトル化中…";
+      try {
+        const res = await fetch("/api/reindex", { method: "POST" });
+        const data = await res.json();
+        showToast(data.ok ? `✨ ${data.message}` : `⚠️ ${data.message}`);
+        await loadAiConfig();
+        await refreshStatus();
+        await runSearch();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
     });
 
     // Initial Load

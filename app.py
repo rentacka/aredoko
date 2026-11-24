@@ -51,6 +51,14 @@ class EnrichRequest(BaseModel):
     max_items: int = 20
 
 
+class AIConfigRequest(BaseModel):
+    preset: str = "aria_local"
+    embed_url: str = ""
+    embed_model: str = ""
+    llm_url: str = ""
+    llm_model: str = ""
+
+
 @app.get("/")
 def serve_index() -> FileResponse:
     index_path = STATIC_DIR / "index.html"
@@ -62,6 +70,34 @@ def serve_index() -> FileResponse:
 @app.get("/api/status")
 def api_status() -> dict:
     return engine.get_status()
+
+
+@app.get("/api/config")
+def api_get_config() -> dict:
+    return engine.get_ai_config_payload()
+
+
+@app.post("/api/config")
+def api_update_config(req: AIConfigRequest) -> dict:
+    cfg = engine.update_ai_config(
+        preset=req.preset,
+        embed_url=req.embed_url,
+        embed_model=req.embed_model,
+        llm_url=req.llm_url,
+        llm_model=req.llm_model,
+    )
+    return {"ok": True, "config": cfg, "status": engine.get_status()}
+
+
+@app.get("/api/models")
+def api_list_models(url: str = Query(default="")) -> dict:
+    target = url.strip() or engine.ai_config["embed_url"]
+    return engine.fetch_available_models(target)
+
+
+@app.post("/api/reindex")
+def api_reindex() -> dict:
+    return engine.reindex_missing_vectors()
 
 
 @app.get("/api/search")

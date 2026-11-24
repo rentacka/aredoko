@@ -2,10 +2,12 @@
 AreDoko (「あれどこだっけ？」AI記憶庫) Core Engine
 - Cross-platform Chromium (Chrome/Edge/Brave) Bookmarks JSON reader (read-only)
 - Netscape Bookmark HTML importer (Safari/Firefox/Chrome universal export)
-- SQLite metadata store + NumPy (.npz) L2-normalized dense vector store
-- Hybrid search: Dense (Port 1919 EmbeddingGemma-2) + Sparse (JP 2-gram + word BM25)
-  + optional Port 1918 local LLM rerank
-- Background page fetch + Port 1918 AI summary & tag enrichment
+- SQLite metadata store + NumPy (.npz) L2-normalized dense vector store (per-model namespace)
+- Multi-provider OpenAI-compatible local AI support:
+  Aria Local (Port 1919/1918) / Ollama (11434) / LM Studio (1234) / Custom llama-server
+- Hybrid search: Dense (Embeddings) + Sparse (JP 2-gram + word BM25)
+  + optional local LLM rerank
+- Background page fetch + local LLM AI summary & tag enrichment
 """
 
 from __future__ import annotations
@@ -30,8 +32,65 @@ import numpy as np
 from bs4 import BeautifulSoup
 
 EMBED_BASE_URL = os.environ.get("AREDOKO_EMBED_URL", "http://127.0.0.1:1919")
+EMBED_MODEL_DEFAULT = os.environ.get("AREDOKO_EMBED_MODEL", "")
 LLM_BASE_URL = os.environ.get("AREDOKO_LLM_URL", "http://127.0.0.1:1918")
+LLM_MODEL_DEFAULT = os.environ.get("AREDOKO_LLM_MODEL", "")
 EMBED_DIM = 768
+
+AI_PRESETS: dict[str, dict[str, str]] = {
+    "aria_local": {
+        "label": "Aria Local (1919+1918)",
+        "embed_url": EMBED_BASE_URL,
+        "embed_model": EMBED_MODEL_DEFAULT,
+        "llm_url": LLM_BASE_URL,
+        "llm_model": LLM_MODEL_DEFAULT,
+    },
+    "ollama": {
+        "label": "Ollama (11434)",
+        "embed_url": "http://127.0.0.1:11434",
+        "embed_model": "nomic-embed-text",
+        "llm_url": "http://127.0.0.1:11434",
+        "llm_model": "gemma3:4b",
+    },
+    "lmstudio": {
+        "label": "LM Studio (1234)",
+        "embed_url": "http://127.0.0.1:1234",
+        "embed_model": "",
+        "llm_url": "http://127.0.0.1:1234",
+        "llm_model": "",
+    },
+    "custom": {
+        "label": "カスタム (OpenAI互換)",
+        "embed_url": "http://127.0.0.1:1919",
+        "embed_model": "",
+        "llm_url": "http://127.0.0.1:1918",
+        "llm_model": "",
+    },
+}
+
+
+def normalize_base_url(url: str) -> str:
+    """Normalize user-entered endpoint URL to a clean base URL without /v1/... suffix."""
+    u = (url or "").strip().rstrip("/")
+    for suffix in (
+        "/v1/chat/completions",
+        "/v1/embeddings",
+        "/v1/models",
+        "/api/embeddings",
+        "/api/embed",
+        "/api/tags",
+        "/v1",
+    ):
+        if u.lower().endswith(suffix):
+            u = u[: -len(suffix)].rstrip("/")
+            break
+    return u
+
+
+def strip_thinking_tags(text: str) -> str:
+    """Remove <think>...</think> reasoning blocks emitted by thinking LLMs."""
+    cleaned = re.sub(r"<think>.*?</think>", "", text or "", flags=re.S | re.I)
+    return cleaned.strip()
 
 
 def _now_ts() -> float:
@@ -177,12 +236,15 @@ class AreDokoEngine:
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = self.data_dir / "aredoko.db"
-        self.vec_path = self.data_dir / "embeddings.npz"
+        self.config_path = self.data_dir / "ai_config.json"
         self._lock = threading.RLock()
 
-        # In-memory vector cache: item_id -> normalized float32 vector
+        # AI provider configuration (persisted to data/ai_config.json)
+        self.ai_config: dict[str, str] = self._load_ai_config()
+
+        # In-memory vector cache: item_id -> normalized float32 vector (dynamic dimension)
         self._vec_ids: np.ndarray = np.array([], dtype=np.int64)
-        self._vec_mat: np.ndarray = np.zeros((0, EMBED_DIM), dtype=np.float32)
+        self._vec_mat: np.ndarray = np.zeros((0, 0), dtype=np.float32)
 
         # Background enrich state
         self.enrich_state: dict[str, Any] = {
@@ -195,6 +257,88 @@ class AreDokoEngine:
 
         self._init_db()
         self._load_vectors()
+
+    @property
+    def vec_path(self) -> Path:
+        """Separate vector file per (embed_url, embed_model) namespace while preserving legacy embeddings.npz."""
+        default_url = normalize_base_url(EMBED_BASE_URL)
+        cur_url = normalize_base_url(self.ai_config.get("embed_url", ""))
+        cur_model = (self.ai_config.get("embed_model") or "").strip()
+        if cur_url == default_url and cur_model == EMBED_MODEL_DEFAULT:
+            return self.data_dir / "embeddings.npz"
+        ns_key = hashlib.sha256(f"{cur_url}::{cur_model}".encode("utf-8")).hexdigest()[:12]
+        return self.data_dir / f"embeddings_{ns_key}.npz"
+
+    def _default_ai_config(self) -> dict[str, str]:
+        p = AI_PRESETS["aria_local"]
+        return {
+            "preset": "aria_local",
+            "embed_url": normalize_base_url(p["embed_url"]),
+            "embed_model": p["embed_model"],
+            "llm_url": normalize_base_url(p["llm_url"]),
+            "llm_model": p["llm_model"],
+        }
+
+    def _load_ai_config(self) -> dict[str, str]:
+        cfg = self._default_ai_config()
+        if self.config_path.is_file():
+            try:
+                loaded = json.loads(self.config_path.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    preset = str(loaded.get("preset") or cfg["preset"])
+                    if preset not in AI_PRESETS:
+                        preset = "custom"
+                    cfg["preset"] = preset
+                    if "embed_url" in loaded and str(loaded["embed_url"]).strip():
+                        cfg["embed_url"] = normalize_base_url(str(loaded["embed_url"]))
+                    if "embed_model" in loaded:
+                        cfg["embed_model"] = str(loaded.get("embed_model") or "").strip()
+                    if "llm_url" in loaded and str(loaded["llm_url"]).strip():
+                        cfg["llm_url"] = normalize_base_url(str(loaded["llm_url"]))
+                    if "llm_model" in loaded:
+                        cfg["llm_model"] = str(loaded.get("llm_model") or "").strip()
+            except Exception:
+                pass
+        return cfg
+
+    def _save_ai_config(self) -> None:
+        tmp = self.data_dir / "ai_config.tmp.json"
+        tmp.write_text(json.dumps(self.ai_config, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(self.config_path)
+
+    def get_ai_config_payload(self) -> dict[str, Any]:
+        return {
+            "config": dict(self.ai_config),
+            "presets": AI_PRESETS,
+            "vector_file": self.vec_path.name,
+            "vector_dim": int(self._vec_mat.shape[1]) if self._vec_mat.ndim == 2 else 0,
+        }
+
+    def update_ai_config(
+        self,
+        preset: str = "aria_local",
+        embed_url: str = "",
+        embed_model: str = "",
+        llm_url: str = "",
+        llm_model: str = "",
+    ) -> dict[str, str]:
+        if preset not in AI_PRESETS:
+            preset = "custom"
+        base = AI_PRESETS[preset]
+        new_cfg = {
+            "preset": preset,
+            "embed_url": normalize_base_url(embed_url) or normalize_base_url(base["embed_url"]),
+            "embed_model": embed_model.strip(),
+            "llm_url": normalize_base_url(llm_url) or normalize_base_url(base["llm_url"]),
+            "llm_model": llm_model.strip(),
+        }
+        with self._lock:
+            old_vec_path = self.vec_path
+            self.ai_config = new_cfg
+            self._save_ai_config()
+            if self.vec_path != old_vec_path:
+                self._load_vectors()
+        return dict(self.ai_config)
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -231,53 +375,120 @@ class AreDokoEngine:
 
     def _load_vectors(self) -> None:
         with self._lock:
-            if self.vec_path.is_file():
+            vp = self.vec_path
+            if vp.is_file():
                 try:
-                    data = np.load(str(self.vec_path))
-                    self._vec_ids = data["ids"].astype(np.int64)
-                    self._vec_mat = data["mat"].astype(np.float32)
-                    return
+                    data = np.load(str(vp))
+                    ids = data["ids"].astype(np.int64)
+                    mat = data["mat"].astype(np.float32)
+                    if mat.ndim == 2 and len(ids) == mat.shape[0]:
+                        self._vec_ids = ids
+                        self._vec_mat = mat
+                        return
                 except Exception:
                     pass
             self._vec_ids = np.array([], dtype=np.int64)
-            self._vec_mat = np.zeros((0, EMBED_DIM), dtype=np.float32)
+            self._vec_mat = np.zeros((0, 0), dtype=np.float32)
 
     def _save_vectors(self) -> None:
         with self._lock:
-            tmp = self.data_dir / "embeddings.tmp.npz"
+            vp = self.vec_path
+            tmp = self.data_dir / f"{vp.stem}.tmp.npz"
             np.savez(str(tmp), ids=self._vec_ids, mat=self._vec_mat)
-            tmp.replace(self.vec_path)
+            tmp.replace(vp)
 
     # ---------- Local AI Server Helpers ----------
+    def _probe_server(self, base_url: str) -> bool:
+        if not base_url:
+            return False
+        base = normalize_base_url(base_url)
+        with httpx.Client(timeout=1.5) as client:
+            for path in ("/v1/models", "/health", "/api/tags"):
+                try:
+                    r = client.get(f"{base}{path}")
+                    if r.status_code == 200:
+                        return True
+                except Exception:
+                    continue
+        return False
+
+    def fetch_available_models(self, base_url: str) -> dict[str, Any]:
+        """Query OpenAI /v1/models or Ollama /api/tags to list available model names."""
+        base = normalize_base_url(base_url)
+        if not base:
+            return {"ok": False, "models": [], "error": "URLが空です。"}
+        models: list[str] = []
+        seen: set[str] = set()
+        with httpx.Client(timeout=3.0) as client:
+            # 1. OpenAI-compatible /v1/models (Ollama / LM Studio / llama-server / vLLM)
+            try:
+                r = client.get(f"{base}/v1/models")
+                if r.status_code == 200:
+                    data = r.json()
+                    for item in data.get("data", []):
+                        mid = str(item.get("id") or "").strip()
+                        if mid and mid not in seen:
+                            seen.add(mid)
+                            models.append(mid)
+            except Exception:
+                pass
+            # 2. Ollama native /api/tags fallback
+            if not models:
+                try:
+                    r = client.get(f"{base}/api/tags")
+                    if r.status_code == 200:
+                        data = r.json()
+                        for item in data.get("models", []):
+                            mid = str(item.get("name") or "").strip()
+                            if mid and mid not in seen:
+                                seen.add(mid)
+                                models.append(mid)
+                except Exception:
+                    pass
+        if models:
+            return {"ok": True, "url": base, "models": models}
+        alive = self._probe_server(base)
+        if alive:
+            return {"ok": True, "url": base, "models": [], "note": "サーバーは稼働中ですがモデル一覧が空です（空欄のまま利用可能）。"}
+        return {"ok": False, "url": base, "models": [], "error": f"{base} に接続できませんでした。"}
+
     def check_servers(self) -> dict[str, bool]:
-        status = {"embed_1919": False, "llm_1918": False}
-        try:
-            r = httpx.get(f"{EMBED_BASE_URL}/health", timeout=1.5)
-            status["embed_1919"] = r.status_code == 200
-        except Exception:
-            pass
-        try:
-            r = httpx.get(f"{LLM_BASE_URL}/health", timeout=1.5)
-            status["llm_1918"] = r.status_code == 200
-        except Exception:
-            pass
-        return status
+        embed_url = self.ai_config.get("embed_url", "")
+        llm_url = self.ai_config.get("llm_url", "")
+        ok_embed = self._probe_server(embed_url)
+        ok_llm = ok_embed if normalize_base_url(llm_url) == normalize_base_url(embed_url) else self._probe_server(llm_url)
+        return {
+            "embed": ok_embed,
+            "llm": ok_llm,
+            # Legacy keys kept for backward compatibility
+            "embed_1919": ok_embed,
+            "llm_1918": ok_llm,
+        }
 
     def _embed_texts(self, texts: list[str]) -> np.ndarray | None:
         if not texts:
             return None
+        embed_url = normalize_base_url(self.ai_config.get("embed_url", ""))
+        embed_model = (self.ai_config.get("embed_model") or "").strip()
+        if not embed_url:
+            return None
         try:
             all_vecs: list[list[float]] = []
             batch_size = 32
-            with httpx.Client(timeout=20.0) as client:
+            with httpx.Client(timeout=25.0) as client:
                 for i in range(0, len(texts), batch_size):
                     batch = [t[:1200] for t in texts[i : i + batch_size]]
-                    resp = client.post(f"{EMBED_BASE_URL}/v1/embeddings", json={"input": batch})
+                    req_body: dict[str, Any] = {"input": batch}
+                    if embed_model:
+                        req_body["model"] = embed_model
+                    resp = client.post(f"{embed_url}/v1/embeddings", json=req_body)
                     resp.raise_for_status()
                     payload = resp.json()
                     for row in payload["data"]:
                         all_vecs.append(row["embedding"])
             mat = np.asarray(all_vecs, dtype=np.float32)
+            if mat.ndim != 2 or mat.shape[0] != len(texts):
+                return None
             norms = np.linalg.norm(mat, axis=1, keepdims=True)
             norms = np.where(norms == 0, 1.0, norms)
             return mat / norms
@@ -318,11 +529,13 @@ class AreDokoEngine:
         vecs = self._embed_texts(texts)
         if vecs is None:
             return 0
+        new_dim = int(vecs.shape[1])
 
         with self._lock:
             existing: dict[int, np.ndarray] = {}
-            for idx, vid in enumerate(self._vec_ids.tolist()):
-                existing[int(vid)] = self._vec_mat[idx]
+            if self._vec_mat.ndim == 2 and self._vec_mat.shape[1] == new_dim:
+                for idx, vid in enumerate(self._vec_ids.tolist()):
+                    existing[int(vid)] = self._vec_mat[idx]
             for r, v in zip(rows, vecs):
                 existing[int(r["id"])] = v
             sorted_ids = sorted(existing.keys())
@@ -330,6 +543,38 @@ class AreDokoEngine:
             self._vec_mat = np.stack([existing[k] for k in sorted_ids], axis=0).astype(np.float32)
             self._save_vectors()
         return len(rows)
+
+    def reindex_missing_vectors(self) -> dict[str, Any]:
+        """Embed all items that are missing vectors in the active model namespace."""
+        with self._lock:
+            have_ids = set(self._vec_ids.tolist())
+        with self._connect() as conn:
+            all_ids = [int(r["id"]) for r in conn.execute("SELECT id FROM items").fetchall()]
+        missing_ids = [i for i in all_ids if i not in have_ids]
+        if not missing_ids:
+            return {
+                "ok": True,
+                "embedded": 0,
+                "total": len(all_ids),
+                "vectors": int(len(self._vec_ids)),
+                "message": "すべての記憶はすでに現在のモデルでベクトル化済みです✨",
+            }
+        embedded = self._upsert_vectors_for_ids(missing_ids)
+        if embedded == 0:
+            return {
+                "ok": False,
+                "embedded": 0,
+                "total": len(all_ids),
+                "vectors": int(len(self._vec_ids)),
+                "message": f"Embedding サーバー ({self.ai_config['embed_url']}) に接続できなかったか、モデル名が正しくありません。",
+            }
+        return {
+            "ok": True,
+            "embedded": embedded,
+            "total": len(all_ids),
+            "vectors": int(len(self._vec_ids)),
+            "message": f"{embedded}件の記憶を現在のモデルでベクトル化しました！",
+        }
 
     # ---------- CRUD & Sync ----------
     def add_item(
@@ -546,11 +791,16 @@ class AreDokoEngine:
         max_sparse = float(sparse_scores.max()) if n_docs > 0 else 0.0
         sparse_norm = sparse_scores / max_sparse if max_sparse > 0 else sparse_scores
 
-        # 2. Dense Vector scoring (Port 1919)
+        # 2. Dense Vector scoring (Configured Embedding Server)
         dense_norm = np.zeros(n_docs, dtype=np.float32)
         used_dense = False
         q_vec = self._embed_texts([q])
-        if q_vec is not None and len(self._vec_ids) > 0:
+        if (
+            q_vec is not None
+            and len(self._vec_ids) > 0
+            and self._vec_mat.ndim == 2
+            and self._vec_mat.shape[1] == q_vec.shape[1]
+        ):
             with self._lock:
                 id_to_idx = {int(vid): idx for idx, vid in enumerate(self._vec_ids.tolist())}
                 sims_all = (self._vec_mat @ q_vec[0]).astype(np.float32)
@@ -579,12 +829,12 @@ class AreDokoEngine:
                 continue
             candidates.append((sc, rows[idx]))
 
-        # 3. Optional Port 1918 Local LLM Rerank on Top-10
+        # 3. Optional Local LLM Rerank on Top-10
         if use_rerank and len(candidates) >= 2:
-            reranked = self._rerank_with_1918(q, candidates[:10])
+            reranked = self._rerank_with_llm(q, candidates[:10])
             if reranked is not None:
                 candidates = reranked + candidates[10:]
-                mode += "+1918_rerank"
+                mode += "+llm_rerank"
 
         out_items = [
             self._format_row(r, score=min(99, max(50, int(round(sc * 100)))))
@@ -597,9 +847,13 @@ class AreDokoEngine:
             "mode": mode,
         }
 
-    def _rerank_with_1918(
+    def _rerank_with_llm(
         self, query: str, candidates: list[tuple[float, dict[str, Any]]]
     ) -> list[tuple[float, dict[str, Any]]] | None:
+        llm_url = normalize_base_url(self.ai_config.get("llm_url", ""))
+        llm_model = (self.ai_config.get("llm_model") or "").strip()
+        if not llm_url:
+            return None
         lines = []
         for idx, (_, r) in enumerate(candidates, 1):
             lines.append(f"{idx}. {r['title']} | {r['summary'][:80]} | {r['folder']}")
@@ -609,21 +863,24 @@ class AreDokoEngine:
             "候補:\n" + "\n".join(lines) + "\n"
             "出力形式例: [3, 1, 2]"
         )
+        req_body: dict[str, Any] = {
+            "messages": [
+                {"role": "system", "content": "関連度順に番号のJSON配列だけを出力してください。"},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.0,
+            "max_tokens": 96,
+        }
+        if llm_model:
+            req_body["model"] = llm_model
         try:
             resp = httpx.post(
-                f"{LLM_BASE_URL}/v1/chat/completions",
-                json={
-                    "messages": [
-                        {"role": "system", "content": "関連度順に番号のJSON配列だけを出力してください。"},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": 0.0,
-                    "max_tokens": 64,
-                },
-                timeout=4.5,
+                f"{llm_url}/v1/chat/completions",
+                json=req_body,
+                timeout=8.0,
             )
             resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"]
+            content = strip_thinking_tags(resp.json()["choices"][0]["message"]["content"])
             m = re.search(r"\[[\d,\s]+\]", content)
             if not m:
                 return None
@@ -643,6 +900,8 @@ class AreDokoEngine:
             return reordered
         except Exception:
             return None
+
+    _rerank_with_1918 = _rerank_with_llm
 
     # ---------- Background AI Enrichment (Phase 2) ----------
     def start_enrichment(self, max_items: int = 20) -> dict[str, Any]:
@@ -704,29 +963,36 @@ class AreDokoEngine:
         except Exception:
             return ""
 
-    def _summarize_with_1918(self, title: str, url: str, snippet: str) -> tuple[str, list[str]]:
+    def _summarize_with_llm(self, title: str, url: str, snippet: str) -> tuple[str, list[str]]:
         fallback_summary = snippet[:95] if snippet else f"{_extract_domain(url)} のブックマーク"
+        llm_url = normalize_base_url(self.ai_config.get("llm_url", ""))
+        llm_model = (self.ai_config.get("llm_model") or "").strip()
+        if not llm_url:
+            return fallback_summary, []
         prompt = (
             "次のWebページ情報から、曖昧な日本語で後から思い出しやすい「1行要約(50文字以内)」と"
             "「連想キーワード(3〜5個)」をJSONのみで返してください。\n"
             f"タイトル: {title}\nURL: {url}\n抜粋: {snippet[:350]}\n"
             '形式: {"summary": "...", "tags": ["タグ1", "タグ2", "タグ3"]}'
         )
+        req_body: dict[str, Any] = {
+            "messages": [
+                {"role": "system", "content": "JSONオブジェクトのみを出力してください。"},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.1,
+            "max_tokens": 180,
+        }
+        if llm_model:
+            req_body["model"] = llm_model
         try:
             resp = httpx.post(
-                f"{LLM_BASE_URL}/v1/chat/completions",
-                json={
-                    "messages": [
-                        {"role": "system", "content": "JSONオブジェクトのみを出力してください。"},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": 140,
-                },
-                timeout=8.0,
+                f"{llm_url}/v1/chat/completions",
+                json=req_body,
+                timeout=15.0,
             )
             resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"]
+            content = strip_thinking_tags(resp.json()["choices"][0]["message"]["content"])
             m = re.search(r"\{.*\}", content, re.S)
             if m:
                 parsed = json.loads(m.group(0))
@@ -736,6 +1002,8 @@ class AreDokoEngine:
         except Exception:
             pass
         return fallback_summary, []
+
+    _summarize_with_1918 = _summarize_with_llm
 
     # ---------- Status & Formatting ----------
     def get_status(self) -> dict[str, Any]:
@@ -749,14 +1017,19 @@ class AreDokoEngine:
         browsers = {k: len(v) for k, v in detect_browser_bookmark_paths().items()}
         servers = self.check_servers()
         pct = int(round((enriched / total) * 100)) if total > 0 else 0
+        preset_key = self.ai_config.get("preset", "aria_local")
+        preset_label = AI_PRESETS.get(preset_key, {}).get("label", preset_key)
         return {
             "total": total,
             "enriched": enriched,
             "enriched_pct": pct,
             "vectors": int(len(self._vec_ids)),
+            "vector_dim": int(self._vec_mat.shape[1]) if self._vec_mat.ndim == 2 else 0,
             "by_source": by_source,
             "browsers": browsers,
             "servers": servers,
+            "ai_config": dict(self.ai_config),
+            "ai_label": preset_label,
             "enrich_state": self.enrich_state,
             "platform": platform.system(),
         }
