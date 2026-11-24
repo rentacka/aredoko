@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="glass">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>あれどこだっけ？ — ローカルAI記憶庫</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* =========================================================
+       THEME 1 (DEFAULT): Prism Mist Glass (パステル・グラス系)
+       ========================================================= */
+    :root,
+    [data-theme="glass"] {
+      --font-body: "Plus Jakarta Sans", "M PLUS Rounded 1c", "Yu Gothic UI", sans-serif;
+      --font-display: "Plus Jakarta Sans", "M PLUS Rounded 1c", sans-serif;
+
+      --bg-page: #F4F5FB;
+      --bg-pattern: radial-gradient(circle at 12% 10%, rgba(196, 181, 253, 0.45) 0%, transparent 44%),
+                    radial-gradient(circle at 88% 14%, rgba(153, 246, 228, 0.45) 0%, transparent 42%),
+                    radial-gradient(circle at 72% 86%, rgba(186, 230, 253, 0.45) 0%, transparent 45%),
+                    radial-gradient(circle at 20% 82%, rgba(233, 213, 255, 0.35) 0%, transparent 40%);
+
+      --surface: rgba(255, 255, 255, 0.74);
+      --surface-soft: rgba(255, 255, 255, 0.54);
+      --surface-hover: rgba(255, 255, 255, 0.92);
+      --surface-border: rgba(255, 255, 255, 0.88);
+      --surface-border-strong: rgba(109, 92, 231, 0.32);
+      --backdrop-blur: 18px;
+
+      --ink-primary: #1E1B2E;
+      --ink-secondary: #524E69;
+      --ink-muted: #84809C;
+
+      --accent: #6D5CE7;
+      --accent-hover: #5B48D9;
+      --accent-soft: rgba(109, 92, 231, 0.11);
+      --accent-ink: #5745CF;
+      --accent-secondary: #10B981;
+
+      --score-bg: rgba(16, 185, 129, 0.13);
+      --score-ink: #059669;
+
+      --tag-bg: rgba(255, 255, 255, 0.72);
+      --tag-border: rgba(109, 92, 231, 0.18);
+      --tag-ink: #524A85;
+
+      --shadow-sm: 0 4px 18px rgba(76, 65, 148, 0.06);
+      --shadow-md: 0 14px 36px rgba(76, 65, 148, 0.10);
+      --shadow-search: 0 16px 40px rgba(109, 92, 231, 0.13);
+
+      --radius-search: 18px;
+      --radius-card: 18px;
+      --radius-pill: 10px;
+      --radius-box: 18px;
+
+      --card-ribbon: 1.5px solid rgba(255, 255, 255, 0.88);
+    }
+
+    /* =========================================================
+       THEME 2: Sakura Sweet (アリアちゃんスイート系)
+       ========================================================= */
+    [data-theme="sweet"] {
+      --font-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
+      --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+
+      --bg-page: #FFF9FA;
+      --bg-pattern: radial-gradient(circle at 14% 12%, rgba(255, 214, 226, 0.55) 0%, transparent 42%),
+                    radial-gradient(circle at 86% 18%, rgba(255, 236, 214, 0.55) 0%, transparent 40%),
+                    radial-gradient(circle at 50% 90%, rgba(255, 224, 234, 0.45) 0%, transparent 48%);
+
+      --surface: #FFFFFF;
+      --surface-soft: #FFF1F5;
+      --surface-hover: #FFFDFD;
+      --surface-border: #F8D5DF;
+      --surface-border-strong: #F2B5C7;
+      --backdrop-blur: 0px;
+
+      --ink-primary: #432D35;
+      --ink-secondary: #755863;
+      --ink-muted: #A38490;
+
+      --accent: #E86A92;
+      --accent-hover: #D9547F;
+      --accent-soft: #FFE4EC;
+      --accent-ink: #B83D65;
+      --accent-secondary: #F29C6B;
+
+      --score-bg: #FFE9F0;
+      --score-ink: #C94570;
+
+      --tag-bg: #FFF4F7;
+      --tag-border: #F7D4DF;
+      --tag-ink: #8E5166;
+
+      --shadow-sm: 0 4px 14px rgba(224, 122, 154, 0.09);
+      --shadow-md: 0 12px 30px rgba(224, 122, 154, 0.14);
+      --shadow-search: 0 14px 34px rgba(232, 106, 146, 0.16);
+
+      --radius-search: 999px;
+      --radius-card: 22px;
+      --radius-pill: 999px;
+      --radius-box: 20px;
+
+      --card-ribbon: 5px solid #F497B6;
+    }
+
+    /* =========================================================
+       THEME 3: Midnight Glass (ダークモード)
+       ========================================================= */
+    [data-theme="dark"] {
+      --font-body: "Plus Jakarta Sans", "M PLUS Rounded 1c", "Yu Gothic UI", sans-serif;
+      --font-display: "Plus Jakarta Sans", "M PLUS Rounded 1c", sans-serif;
+
+      --bg-page: #0F101A;
+      --bg-pattern: radial-gradient(circle at 15% 15%, rgba(109, 92, 231, 0.24) 0%, transparent 42%),
+                    radial-gradient(circle at 85% 18%, rgba(16, 185, 129, 0.16) 0%, transparent 40%),
+                    radial-gradient(circle at 50% 90%, rgba(56, 189, 248, 0.14) 0%, transparent 45%);
+
+      --surface: rgba(26, 28, 44, 0.76);
+      --surface-soft: rgba(36, 39, 60, 0.65);
+      --surface-hover: rgba(34, 37, 58, 0.92);
+      --surface-border: rgba(255, 255, 255, 0.10);
+      --surface-border-strong: rgba(139, 92, 246, 0.45);
+      --backdrop-blur: 18px;
+
+      --ink-primary: #F3F4FA;
+      --ink-secondary: #B7BAD3;
+      --ink-muted: #7F84A3;
+
+      --accent: #8B7CFF;
+      --accent-hover: #7A6AF7;
+      --accent-soft: rgba(139, 124, 255, 0.16);
+      --accent-ink: #C5BEFF;
+      --accent-secondary: #34D399;
+
+      --score-bg: rgba(52, 211, 153, 0.15);
+      --score-ink: #6EE7B7;
+
+      --tag-bg: rgba(255, 255, 255, 0.06);
+      --tag-border: rgba(255, 255, 255, 0.12);
+      --tag-ink: #C8CBE4;
+
+      --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.28);
+      --shadow-md: 0 14px 36px rgba(0, 0, 0, 0.40);
+      --shadow-search: 0 18px 44px rgba(0, 0, 0, 0.42);
+
+      --radius-search: 18px;
+      --radius-card: 18px;
+      --radius-pill: 10px;
+      --radius-box: 18px;
+
+      --card-ribbon: 1.5px solid rgba(255, 255, 255, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: var(--font-body);
+      color: var(--ink-primary);
+      background-color: var(--bg-page);
+      background-image: var(--bg-pattern);
+      background-attachment: fixed;
+      transition: background-color 0.3s ease, color 0.25s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 20px 84px;
+    }
+
+    /* ===== Header ===== */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      box-shadow: var(--shadow-sm);
+      display: grid;
+      place-items: center;
+      font-size: 21px;
+      backdrop-filter: blur(var(--backdrop-blur));
+    }
+
+    .brand-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-sub {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(var(--backdrop-blur));
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22C55E;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+    }
+
+    .dot.warn {
+      background: #F59E0B;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.22);
+    }
+
+    .theme-pills {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(var(--backdrop-blur));
+      box-shadow: var(--shadow-sm);
+    }
+
+    .theme-pill-btn {
+      border: none;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .theme-pill-btn.active {
+      background: var(--accent);
+      color: #FFFFFF;
+    }
+
+    /* ===== Hero Search ===== */
+    .hero-search {
+      text-align: center;
+      margin: 10px auto 24px;
+      max-width: 780px;
+    }
+
+    .hero-copy {
+      margin: 0 0 16px;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.38;
+      letter-spacing: -0.02em;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 2px solid var(--surface-border);
+      border-radius: var(--radius-search);
+      padding: 7px 9px 7px 18px;
+      box-shadow: var(--shadow-search);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .search-icon {
+      font-size: 19px;
+      margin-right: 10px;
+      opacity: 0.78;
+      user-select: none;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 15.5px;
+      font-weight: 500;
+      color: var(--ink-primary);
+      padding: 8px 4px;
+      min-width: 120px;
+    }
+
+    .search-input::placeholder {
+      color: var(--ink-muted);
+    }
+
+    .rerank-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-soft);
+      color: var(--ink-secondary);
+      padding: 7px 11px;
+      border-radius: var(--radius-pill);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 6px;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .rerank-toggle.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .search-btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: var(--radius-search);
+      background: var(--accent);
+      color: #FFFFFF;
+      transition: background 0.2s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .search-btn:hover { background: var(--accent-hover); }
+    .search-btn:active { transform: scale(0.97); }
+
+    /* ===== Action Dock ===== */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 780px) {
+      .action-grid { grid-template-columns: 1fr; }
+      .hero-copy { font-size: 21px; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      border-radius: var(--radius-box);
+      padding: 15px 17px;
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    }
+
+    .panel.drag-over {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .panel-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-hint {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-muted);
+    }
+
+    .drop-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .drop-input {
+      flex: 1;
+      border: 1.5px solid var(--surface-border);
+      background: var(--surface-soft);
+      border-radius: 13px;
+      padding: 9px 13px;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--ink-primary);
+      outline: none;
+    }
+
+    .drop-input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-soft {
+      border: 1.5px solid var(--surface-border-strong);
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 9px 15px;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn-soft:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .sync-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      flex: 1;
+      min-width: 96px;
+      border: 1.5px solid var(--surface-border);
+      background: var(--surface-soft);
+      color: var(--ink-primary);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      background: var(--surface);
+    }
+
+    .btn-outline:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .enrich-bar-wrap {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      overflow: hidden;
+      border: 1px solid var(--surface-border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+      transition: width 0.45s ease;
+    }
+
+    /* ===== Results Bar ===== */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .source-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .source-tab {
+      border: 1px solid var(--surface-border);
+      background: var(--surface);
+      color: var(--ink-secondary);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .source-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .result-meta {
+      font-size: 12px;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
+    /* ===== Cards Grid ===== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+
+    .memory-card {
+      position: relative;
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      border-left: var(--card-ribbon);
+      border-radius: var(--radius-card);
+      padding: 15px 17px;
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .memory-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--surface-border-strong);
+      background: var(--surface-hover);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 72%;
+    }
+
+    .card-top-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--score-bg);
+      color: var(--score-ink);
+    }
+
+    .del-btn {
+      border: none;
+      background: transparent;
+      color: var(--ink-muted);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 6px;
+      opacity: 0.45;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+
+    .memory-card:hover .del-btn { opacity: 0.85; }
+    .del-btn:hover { color: #EF4444; opacity: 1; }
+
+    .card-title-link {
+      text-decoration: none;
+      color: var(--ink-primary);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.42;
+      word-break: break-word;
+    }
+
+    .card-title-link:hover {
+      color: var(--accent);
+    }
+
+    .card-summary {
+      margin: 0;
+      font-size: 12.5px;
+      line-height: 1.58;
+      color: var(--ink-secondary);
+      word-break: break-word;
+    }
+
+    .card-footer {
+      margin-top: auto;
+      padding-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag-list {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--tag-ink);
+    }
+
+    .card-domain {
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 46px 20px;
+      background: var(--surface);
+      border: 1.5px dashed var(--surface-border-strong);
+      border-radius: var(--radius-card);
+      color: var(--ink-secondary);
+      line-height: 1.7;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: #1E1B2E;
+      color: #FFFFFF;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+      z-index: 200;
+      max-width: 380px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <!-- Header -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-icon" id="brandIcon">🫧</div>
+        <div>
+          <h1 class="brand-title">あれどこだっけ？</h1>
+          <p class="brand-sub">整理ゼロで、0.5秒で思い出すローカルAI記憶庫</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <span class="status-pill" id="aiPill"><span class="dot" id="aiDot"></span>ローカルAI確認中…</span>
+        <span class="status-pill" id="countPill">📚 0件</span>
+
+        <div class="theme-pills" role="group" aria-label="テーマ切替">
+          <button type="button" class="theme-pill-btn" data-set-theme="glass">✨ Glass</button>
+          <button type="button" class="theme-pill-btn" data-set-theme="sweet">🎀 Sweet</button>
+          <button type="button" class="theme-pill-btn" data-set-theme="dark">🌙 Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Search -->
+    <section class="hero-search">
+      <h2 class="hero-copy" id="heroCopy">No more bookmark folders.<br />曖昧な記憶から、0.5秒で引き出す。</h2>
+
+      <form class="search-box" id="searchForm">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="例：こないだ見た健康と広告の話、Python速くするやつ… (Ctrl+K)"
+          autocomplete="off"
+        />
+        <button type="button" id="rerankBtn" class="rerank-toggle active" title="Port 1918 ローカル金魚リランク">
+          🐠 AI精密リランク ON
+        </button>
+        <button type="submit" class="search-btn">思い出す</button>
+      </form>
+    </section>
+
+    <!-- Action Dock -->
+    <section class="action-grid">
+      <div class="panel">
+        <div class="panel-title">
+          <span>📥 ぽんっと投げ込み箱</span>
+          <span class="panel-hint">URL・Xポスト・雑メモを即ベクトル記憶</span>
+        </div>
+        <form class="drop-form" id="dropForm">
+          <input
+            type="text"
+            id="dropInput"
+            class="drop-input"
+            placeholder="URLや『あとで見る〇〇』をここにペタッ…"
+          />
+          <button type="submit" class="btn-soft">記憶する</button>
+        </form>
+      </div>
+
+      <div class="panel" id="syncPanel">
+        <div class="panel-title">
+          <span>🔄 ブラウザ同期 ＆ AI要約</span>
+          <span class="panel-hint">HTMLファイルのドロップにも対応</span>
+        </div>
+        <div class="sync-actions">
+          <button type="button" class="btn-outline" id="syncChromeBtn">🌐 Chrome</button>
+          <button type="button" class="btn-outline" id="syncEdgeBtn">🌀 Edge</button>
+          <button type="button" class="btn-outline" id="importHtmlBtn">📄 HTML</button>
+          <button type="button" class="btn-outline" id="enrichBtn">✨ AI要約</button>
+          <input type="file" id="htmlFileInput" accept=".html,.htm" hidden />
+        </div>
+        <div class="enrich-bar-wrap">
+          <span id="enrichText">AI要約済み 0%</span>
+          <div class="progress-track">
+            <div class="progress-fill" id="enrichFill"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter & Meta -->
+    <section class="results-header">
+      <div class="source-tabs" id="sourceTabs">
+        <button type="button" class="source-tab active" data-source="all">すべて</button>
+        <button type="button" class="source-tab" data-source="Chrome">🌐 Chrome</button>
+        <button type="button" class="source-tab" data-source="Edge">🌀 Edge</button>
+        <button type="button" class="source-tab" data-source="X">🐦 X保存</button>
+        <button type="button" class="source-tab" data-source="Memo">📝 雑メモ</button>
+        <button type="button" class="source-tab" data-source="HTML">📄 HTML</button>
+      </div>
+      <div class="result-meta" id="resultMeta">読み込み中…</div>
+    </section>
+
+    <!-- Cards -->
+    <section class="cards-grid" id="cardsGrid"></section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let currentSource = "all";
+    let rerankOn = true;
+    let searchTimer = null;
+    let enrichPollTimer = null;
+
+    const cardsGrid = document.getElementById("cardsGrid");
+    const searchInput = document.getElementById("searchInput");
+    const resultMeta = document.getElementById("resultMeta");
+    const countPill = document.getElementById("countPill");
+    const aiPill = document.getElementById("aiPill");
+    const toastEl = document.getElementById("toast");
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3200);
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function sourceEmoji(src) {
+      return { Chrome: "🌐", Edge: "🌀", Brave: "🦁", X: "🐦", Memo: "📝", HTML: "📄" }[src] || "📄";
+    }
+
+    // ===== Theme Management =====
+    function applyTheme(theme, silent = false) {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("aredoko_theme", theme);
+      document.querySelectorAll("[data-set-theme]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.setTheme === theme);
+      });
+      if (theme === "sweet") {
+        document.getElementById("brandIcon").textContent = "🌸";
+        document.getElementById("heroCopy").innerHTML = "フォルダ分けしなくていい。<br />曖昧な記憶のまま、聞いてみてね。";
+      } else if (theme === "dark") {
+        document.getElementById("brandIcon").textContent = "🌙";
+        document.getElementById("heroCopy").innerHTML = "No more bookmark folders.<br />曖昧な記憶から、0.5秒で引き出す。";
+      } else {
+        document.getElementById("brandIcon").textContent = "🫧";
+        document.getElementById("heroCopy").innerHTML = "No more bookmark folders.<br />曖昧な記憶から、0.5秒で引き出す。";
+      }
+      if (!silent) {
+        const names = { glass: "✨ パステル・グラス", sweet: "🎀 さくらスイート", dark: "🌙 ミッドナイト・グラス" };
+        showToast(`テーマを ${names[theme] || theme} に切り替えました`);
+      }
+    }
+
+    document.querySelectorAll("[data-set-theme]").forEach(btn => {
+      btn.addEventListener("click", () => applyTheme(btn.dataset.setTheme));
+    });
+    applyTheme(localStorage.getItem("aredoko_theme") || "glass", true);
+
+    // ===== Status & Search API =====
+    async function refreshStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const st = await res.json();
+        countPill.textContent = `📚 記憶 ${st.total}件（Vec ${st.vectors}）`;
+        document.getElementById("enrichFill").style.width = `${st.enriched_pct}%`;
+        document.getElementById("enrichText").textContent = st.enrich_state.running
+          ? `AI要約中… ${st.enrich_state.done}/${st.enrich_state.total} (${st.enrich_state.last_title})`
+          : `AI要約済み ${st.enriched_pct}% (${st.enriched}/${st.total})`;
+
+        const ok1919 = st.servers.embed_1919;
+        const ok1918 = st.servers.llm_1918;
+        if (ok1919 && ok1918) {
+          aiPill.innerHTML = `<span class="dot"></span>完全ローカルAI稼働（1919＋1918）`;
+        } else if (ok1919) {
+          aiPill.innerHTML = `<span class="dot"></span>ベクトル検索稼働（Port 1919）`;
+        } else {
+          aiPill.innerHTML = `<span class="dot warn"></span>軽量オフライン検索モード`;
+        }
+
+        if (st.enrich_state.running && !enrichPollTimer) {
+          startEnrichPolling();
+        }
+      } catch (e) {
+        aiPill.innerHTML = `<span class="dot warn"></span>サーバー接続待ち`;
+      }
+    }
+
+    async function runSearch() {
+      const q = searchInput.value.trim();
+      const params = new URLSearchParams({
+        q,
+        source: currentSource,
+        rerank: rerankOn ? "true" : "false",
+        limit: "60",
+      });
+      try {
+        const res = await fetch(`/api/search?${params.toString()}`);
+        const data = await res.json();
+        renderCards(data.items || [], data.elapsed_ms || 0, data.mode || "", q);
+      } catch (e) {
+        resultMeta.textContent = "検索エラーが発生しました";
+      }
+    }
+
+    function renderCards(items, elapsedMs, mode, q) {
+      const modeLabel = {
+        recent: "新着順",
+        "hybrid_dense_sparse+1918_rerank": "ハイブリッド＋AI精密リランク",
+        hybrid_dense_sparse: "ハイブリッド意味検索",
+        sparse_only: "軽量日本語キーワード検索",
+        empty: "記憶庫は空です",
+      }[mode] || mode;
+
+      resultMeta.textContent = `${items.length}件表示 ・ ${(elapsedMs / 1000).toFixed(2)}秒（${modeLabel}）`;
+
+      if (!items.length) {
+        cardsGrid.innerHTML = q
+          ? `<div class="empty-state">
+               <div style="font-size:28px;margin-bottom:6px;">🫧</div>
+               <strong>「${escapeHtml(q)}」に合う記憶が見つかりませんでした</strong><br />
+               別の言い回しで探すか、上の「投げ込み箱」から保存してみてくださいね。
+             </div>`
+          : `<div class="empty-state">
+               <div style="font-size:30px;margin-bottom:6px;">✨</div>
+               <strong>まだ記憶庫が空っぽです！</strong><br />
+               右上の <b>「🌐 Chrome」</b> や <b>「🌀 Edge」</b> ボタンを押すと、今のブックマークを一瞬でAI検索できるようになりますよっ💕
+             </div>`;
+        return;
+      }
+
+      cardsGrid.innerHTML = items.map(item => {
+        const href = item.url ? escapeHtml(item.url) : "#";
+        const target = item.url ? `target="_blank" rel="noopener noreferrer"` : `onclick="event.preventDefault()"`;
+        const tagsHtml = (item.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join("");
+        const scoreHtml = q ? `<span class="score-badge">一致 ${item.score}%</span>` : "";
+        return `
+          <article class="memory-card">
+            <div class="card-top">
+              <span class="card-source" title="${escapeHtml(item.folder)}">${sourceEmoji(item.source)} ${escapeHtml(item.source)} ・ ${escapeHtml(item.folder)}</span>
+              <div class="card-top-right">
+                ${scoreHtml}
+                <button type="button" class="del-btn" title="この記憶を削除" onclick="deleteItem(${item.id})">×</button>
+              </div>
+            </div>
+            <a class="card-title-link" href="${href}" ${target}>${escapeHtml(item.title)}</a>
+            <p class="card-summary">${escapeHtml(item.summary)}</p>
+            <div class="card-footer">
+              <div class="tag-list">${tagsHtml}</div>
+              <span class="card-domain">${escapeHtml(item.domain)}</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function deleteItem(id) {
+      await fetch(`/api/items/${id}`, { method: "DELETE" });
+      showToast("記憶を削除しました");
+      refreshStatus();
+      runSearch();
+    }
+
+    // ===== Event Listeners =====
+    document.getElementById("searchForm").addEventListener("submit", e => {
+      e.preventDefault();
+      clearTimeout(searchTimer);
+      runSearch();
+    });
+
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 240);
+    });
+
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+    });
+
+    document.getElementById("rerankBtn").addEventListener("click", e => {
+      rerankOn = !rerankOn;
+      e.currentTarget.classList.toggle("active", rerankOn);
+      e.currentTarget.textContent = rerankOn ? "🐠 AI精密リランク ON" : "⚡ 高速検索モード";
+      runSearch();
+    });
+
+    document.querySelectorAll(".source-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        currentSource = tab.dataset.source;
+        document.querySelectorAll(".source-tab").forEach(t => t.classList.toggle("active", t === tab));
+        runSearch();
+      });
+    });
+
+    // Quick Drop
+    document.getElementById("dropForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const input = document.getElementById("dropInput");
+      const val = input.value.trim();
+      if (!val) return;
+      const isUrl = /^https?:\/\//i.test(val);
+      const res = await fetch("/api/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: val, url: isUrl ? val : "" }),
+      });
+      if (res.ok) {
+        input.value = "";
+        showToast("✨ 記憶庫に保存＆ベクトル化しました！");
+        await refreshStatus();
+        await runSearch();
+      }
+    });
+
+    // Browser Sync
+    async function syncBrowser(browser, btn) {
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "同期中…";
+      try {
+        const res = await fetch("/api/sync/browser", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ browser }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`✨ ${browser} 同期完了！ 新規 ${data.inserted}件 / 更新 ${data.updated}件（ベクトル化 ${data.embedded}件）`);
+          await refreshStatus();
+          await runSearch();
+        } else {
+          showToast(`⚠️ ${data.error || "同期できませんでした"}`);
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+
+    document.getElementById("syncChromeBtn").addEventListener("click", e => syncBrowser("Chrome", e.currentTarget));
+    document.getElementById("syncEdgeBtn").addEventListener("click", e => syncBrowser("Edge", e.currentTarget));
+
+    // HTML Import (Button + Drag & Drop)
+    const htmlFileInput = document.getElementById("htmlFileInput");
+    document.getElementById("importHtmlBtn").addEventListener("click", () => htmlFileInput.click());
+
+    async function uploadHtmlFile(file) {
+      if (!file) return;
+      const fd = new FormData();
+      fd.append("file", file);
+      showToast("📄 ブックマークHTMLを読み込んでいます…");
+      const res = await fetch("/api/sync/html", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(`✨ HTML取込完了！ 新規 ${data.inserted}件 / 更新 ${data.updated}件`);
+        await refreshStatus();
+        await runSearch();
+      }
+    }
+
+    htmlFileInput.addEventListener("change", e => {
+      if (e.target.files && e.target.files[0]) {
+        uploadHtmlFile(e.target.files[0]);
+        e.target.value = "";
+      }
+    });
+
+    const syncPanel = document.getElementById("syncPanel");
+    syncPanel.addEventListener("dragover", e => { e.preventDefault(); syncPanel.classList.add("drag-over"); });
+    syncPanel.addEventListener("dragleave", () => syncPanel.classList.remove("drag-over"));
+    syncPanel.addEventListener("drop", e => {
+      e.preventDefault();
+      syncPanel.classList.remove("drag-over");
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) uploadHtmlFile(file);
+    });
+
+    // AI Enrichment
+    function startEnrichPolling() {
+      clearInterval(enrichPollTimer);
+      enrichPollTimer = setInterval(async () => {
+        await refreshStatus();
+        const res = await fetch("/api/enrich/status");
+        const st = await res.json();
+        if (!st.running) {
+          clearInterval(enrichPollTimer);
+          enrichPollTimer = null;
+          showToast(`✨ AI要約エンリッチ完了！（${st.done}件処理）`);
+          await runSearch();
+        }
+      }, 1500);
+    }
+
+    document.getElementById("enrichBtn").addEventListener("click", async () => {
+      const res = await fetch("/api/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ max_items: 20 }),
+      });
+      const data = await res.json();
+      showToast(`✨ ${data.message}`);
+      if (data.started) startEnrichPolling();
+    });
+
+    // Initial Load
+    refreshStatus();
+    runSearch();
+  </script>
+</body>
+</html>

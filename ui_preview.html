@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="sweet">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>あれどこだっけ？ — AI記憶庫 UI比較プレビュー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* =========================================================
+       THEME 1: Sweet (アリアちゃんスイート系 - Sakura Milk Stationery)
+       ========================================================= */
+    :root,
+    [data-theme="sweet"] {
+      --font-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
+      --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+
+      --bg-page: #FFF9FA;
+      --bg-pattern: radial-gradient(circle at 14% 12%, rgba(255, 214, 226, 0.55) 0%, transparent 42%),
+                    radial-gradient(circle at 86% 18%, rgba(255, 236, 214, 0.55) 0%, transparent 40%),
+                    radial-gradient(circle at 50% 90%, rgba(255, 224, 234, 0.45) 0%, transparent 48%);
+
+      --surface: #FFFFFF;
+      --surface-soft: #FFF1F5;
+      --surface-hover: #FFFDFD;
+      --surface-border: #F8D5DF;
+      --surface-border-strong: #F2B5C7;
+      --backdrop-blur: 0px;
+
+      --ink-primary: #432D35;
+      --ink-secondary: #755863;
+      --ink-muted: #A38490;
+
+      --accent: #E86A92;
+      --accent-hover: #D9547F;
+      --accent-soft: #FFE4EC;
+      --accent-ink: #B83D65;
+      --accent-secondary: #F29C6B;
+      --accent-secondary-soft: #FFF0E5;
+
+      --score-bg: #FFE9F0;
+      --score-ink: #C94570;
+
+      --tag-bg: #FFF4F7;
+      --tag-border: #F7D4DF;
+      --tag-ink: #8E5166;
+
+      --shadow-sm: 0 4px 14px rgba(224, 122, 154, 0.09);
+      --shadow-md: 0 12px 30px rgba(224, 122, 154, 0.14);
+      --shadow-search: 0 14px 34px rgba(232, 106, 146, 0.16);
+
+      --radius-search: 999px;
+      --radius-card: 22px;
+      --radius-pill: 999px;
+      --radius-box: 20px;
+
+      --card-ribbon: 5px solid #F497B6;
+    }
+
+    /* =========================================================
+       THEME 2: Glass (パステル・グラス系 - Prism Mist Glass)
+       ========================================================= */
+    [data-theme="glass"] {
+      --font-body: "Plus Jakarta Sans", "M PLUS Rounded 1c", "Yu Gothic UI", sans-serif;
+      --font-display: "Plus Jakarta Sans", "M PLUS Rounded 1c", sans-serif;
+
+      --bg-page: #F4F5FB;
+      --bg-pattern: radial-gradient(circle at 12% 10%, rgba(196, 181, 253, 0.45) 0%, transparent 44%),
+                    radial-gradient(circle at 88% 14%, rgba(153, 246, 228, 0.45) 0%, transparent 42%),
+                    radial-gradient(circle at 72% 86%, rgba(186, 230, 253, 0.45) 0%, transparent 45%),
+                    radial-gradient(circle at 20% 82%, rgba(233, 213, 255, 0.35) 0%, transparent 40%);
+
+      --surface: rgba(255, 255, 255, 0.72);
+      --surface-soft: rgba(255, 255, 255, 0.52);
+      --surface-hover: rgba(255, 255, 255, 0.9);
+      --surface-border: rgba(255, 255, 255, 0.85);
+      --surface-border-strong: rgba(139, 92, 246, 0.32);
+      --backdrop-blur: 18px;
+
+      --ink-primary: #1E1B2E;
+      --ink-secondary: #524E69;
+      --ink-muted: #84809C;
+
+      --accent: #6D5CE7;
+      --accent-hover: #5B48D9;
+      --accent-soft: rgba(109, 92, 231, 0.11);
+      --accent-ink: #5745CF;
+      --accent-secondary: #10B981;
+      --accent-secondary-soft: rgba(16, 185, 129, 0.12);
+
+      --score-bg: rgba(16, 185, 129, 0.13);
+      --score-ink: #059669;
+
+      --tag-bg: rgba(255, 255, 255, 0.68);
+      --tag-border: rgba(109, 92, 231, 0.18);
+      --tag-ink: #524A85;
+
+      --shadow-sm: 0 4px 18px rgba(76, 65, 148, 0.06);
+      --shadow-md: 0 14px 36px rgba(76, 65, 148, 0.10);
+      --shadow-search: 0 16px 40px rgba(109, 92, 231, 0.13);
+
+      --radius-search: 18px;
+      --radius-card: 18px;
+      --radius-pill: 10px;
+      --radius-box: 18px;
+
+      --card-ribbon: 1px solid rgba(255, 255, 255, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: var(--font-body);
+      color: var(--ink-primary);
+      background-color: var(--bg-page);
+      background-image: var(--bg-pattern);
+      background-attachment: fixed;
+      transition: background-color 0.35s ease, color 0.3s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Floating Theme Switcher Bar (Preview Only) ===== */
+    .preview-switcher-wrap {
+      position: sticky;
+      top: 12px;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      padding: 0 16px;
+      pointer-events: none;
+    }
+
+    .preview-switcher {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .preview-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6B6678;
+      padding: 0 10px 0 12px;
+      user-select: none;
+    }
+
+    .theme-btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: transparent;
+      color: #5C576B;
+      transition: all 0.22s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .theme-btn:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .theme-btn.active[data-set-theme="sweet"] {
+      background: linear-gradient(135deg, #F0739B, #E86A92);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(232, 106, 146, 0.35);
+    }
+
+    .theme-btn.active[data-set-theme="glass"] {
+      background: linear-gradient(135deg, #6D5CE7, #4F9CF9);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(109, 92, 231, 0.35);
+    }
+
+    /* ===== Main App Container ===== */
+    .app-shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+    }
+
+    /* ===== Top Header ===== */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 26px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      box-shadow: var(--shadow-sm);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      backdrop-filter: blur(var(--backdrop-blur));
+    }
+
+    .brand-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--ink-primary);
+    }
+
+    .brand-sub {
+      margin: 2px 0 0;
+      font-size: 12.5px;
+      color: var(--ink-muted);
+    }
+
+    .status-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(var(--backdrop-blur));
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22C55E;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    /* ===== Hero Search Section ===== */
+    .hero-search {
+      text-align: center;
+      margin: 12px auto 26px;
+      max-width: 760px;
+    }
+
+    .hero-copy {
+      margin: 0 0 18px;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--ink-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 2px solid var(--surface-border);
+      border-radius: var(--radius-search);
+      padding: 8px 10px 8px 20px;
+      box-shadow: var(--shadow-search);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+      transition: border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .search-icon {
+      font-size: 20px;
+      margin-right: 10px;
+      opacity: 0.78;
+      user-select: none;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink-primary);
+      padding: 8px 4px;
+    }
+
+    .search-input::placeholder {
+      color: var(--ink-muted);
+    }
+
+    .rerank-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-soft);
+      color: var(--ink-secondary);
+      padding: 7px 12px;
+      border-radius: var(--radius-pill);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .rerank-toggle.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .search-btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 11px 22px;
+      border-radius: var(--radius-search);
+      background: var(--accent);
+      color: #FFFFFF;
+      transition: background 0.2s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .search-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .search-btn:active {
+      transform: scale(0.97);
+    }
+
+    .quick-prompts {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .quick-prompts-label {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .prompt-chip {
+      border: 1px solid var(--tag-border);
+      background: var(--tag-bg);
+      color: var(--tag-ink);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .prompt-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      transform: translateY(-1px);
+    }
+
+    /* ===== Action Dock (Quick Drop + Sync + Enrich) ===== */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    @media (max-width: 780px) {
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-copy {
+        font-size: 22px;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      border-radius: var(--radius-box);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    }
+
+    .panel-title {
+      margin: 0 0 10px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--ink-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-hint {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--ink-muted);
+    }
+
+    .drop-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .drop-input {
+      flex: 1;
+      border: 1.5px solid var(--surface-border);
+      background: var(--surface-soft);
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--ink-primary);
+      outline: none;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .drop-input:focus {
+      border-color: var(--accent);
+      background: #FFFFFF;
+    }
+
+    .btn-soft {
+      border: 1.5px solid var(--surface-border-strong);
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px 15px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn-soft:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .sync-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      flex: 1;
+      min-width: 110px;
+      border: 1.5px solid var(--surface-border);
+      background: var(--surface-soft);
+      color: var(--ink-primary);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 9px 12px;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      background: var(--surface);
+    }
+
+    .enrich-bar-wrap {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      overflow: hidden;
+      border: 1px solid var(--surface-border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 68%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+      transition: width 0.5s ease;
+    }
+
+    /* ===== Filter & Result Meta Bar ===== */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .source-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .source-tab {
+      border: 1px solid var(--surface-border);
+      background: var(--surface);
+      color: var(--ink-secondary);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 6px 13px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .source-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .result-meta {
+      font-size: 12.5px;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
+    /* ===== Memory Cards ===== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .memory-card {
+      background: var(--surface);
+      border: 1.5px solid var(--surface-border);
+      border-left: var(--card-ribbon);
+      border-radius: var(--radius-card);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(var(--backdrop-blur));
+      -webkit-backdrop-filter: blur(var(--backdrop-blur));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .memory-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--surface-border-strong);
+      background: var(--surface-hover);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink-muted);
+    }
+
+    .score-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: var(--score-bg);
+      color: var(--score-ink);
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 15.5px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--ink-primary);
+    }
+
+    .card-summary {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--ink-secondary);
+    }
+
+    .card-footer {
+      margin-top: auto;
+      padding-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--tag-ink);
+    }
+
+    .card-domain {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    /* ===== Toast Notification ===== */
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--ink-primary);
+      color: #FFFFFF;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+      z-index: 200;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 44px 20px;
+      background: var(--surface);
+      border: 1.5px dashed var(--surface-border-strong);
+      border-radius: var(--radius-card);
+      color: var(--ink-secondary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 比較用テーマ切替バー（本番では選んだ方だけ残します） -->
+  <div class="preview-switcher-wrap">
+    <div class="preview-switcher" role="tablist" aria-label="デザイン比較">
+      <span class="preview-label">UI比較プレビュー</span>
+      <button class="theme-btn active" data-set-theme="sweet" type="button">🎀 パターン1：アリアちゃんスイート</button>
+      <button class="theme-btn" data-set-theme="glass" type="button">✨ パターン2：パステル・グラス</button>
+    </div>
+  </div>
+
+  <main class="app-shell">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-icon" id="brandIcon">🌸</div>
+        <div>
+          <h1 class="brand-title">あれどこだっけ？</h1>
+          <p class="brand-sub" id="brandSub">整理ゼロで、0.5秒で思い出すやさしいAI記憶庫</p>
+        </div>
+      </div>
+
+      <div class="status-pills">
+        <span class="status-pill"><span class="dot"></span>完全ローカル稼働（API代 0円）</span>
+        <span class="status-pill" id="countPill">📚 記憶 8件（モック）</span>
+      </div>
+    </header>
+
+    <!-- Hero Search -->
+    <section class="hero-search">
+      <h2 class="hero-copy" id="heroCopy">フォルダ分けしなくていい。<br />曖昧な記憶のまま、聞いてみてね。</h2>
+
+      <form class="search-box" id="searchForm">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="例：こないだ見た健康と広告の話、Python速くするやつ…"
+          autocomplete="off"
+        />
+        <button type="button" id="rerankBtn" class="rerank-toggle active" title="Port 1918 ローカル金魚リランク">
+          🐠 AI精密リランク ON
+        </button>
+        <button type="submit" class="search-btn">思い出す</button>
+      </form>
+
+      <div class="quick-prompts">
+        <span class="quick-prompts-label">お試し検索：</span>
+        <button type="button" class="prompt-chip" data-q="健康 広告">健康と広告の話</button>
+        <button type="button" class="prompt-chip" data-q="Python 高速">Pythonを速くするやつ</button>
+        <button type="button" class="prompt-chip" data-q="投資 決算">決算と投資の記事</button>
+        <button type="button" class="prompt-chip" data-q="ブックマーク">ブックマーク企画</button>
+        <button type="button" class="prompt-chip" data-q="">ぜんぶ表示</button>
+      </div>
+    </section>
+
+    <!-- Action Dock -->
+    <section class="action-grid">
+      <div class="panel">
+        <div class="panel-title">
+          <span>📥 ぽんっと投げ込み箱</span>
+          <span class="panel-hint">URLでも雑メモでもそのまま記憶</span>
+        </div>
+        <form class="drop-form" id="dropForm">
+          <input
+            type="text"
+            id="dropInput"
+            class="drop-input"
+            placeholder="URLや『あとで見る〇〇』をここにペタッ…"
+          />
+          <button type="submit" class="btn-soft">記憶する</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">
+          <span>🔄 ブラウザ同期 ＆ AI要約</span>
+          <span class="panel-hint">Chrome / Edge / HTML対応</span>
+        </div>
+        <div class="sync-actions">
+          <button type="button" class="btn-outline" id="syncChromeBtn">🌐 Chrome読込</button>
+          <button type="button" class="btn-outline" id="syncEdgeBtn">🌀 Edge読込</button>
+          <button type="button" class="btn-outline" id="enrichBtn">✨ AI要約補完</button>
+        </div>
+        <div class="enrich-bar-wrap">
+          <span id="enrichText">AI要約済み 68%</span>
+          <div class="progress-track">
+            <div class="progress-fill" id="enrichFill"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter & Meta -->
+    <section class="results-header">
+      <div class="source-tabs" id="sourceTabs">
+        <button type="button" class="source-tab active" data-source="all">すべて</button>
+        <button type="button" class="source-tab" data-source="Chrome">🌐 Chrome</button>
+        <button type="button" class="source-tab" data-source="Edge">🌀 Edge</button>
+        <button type="button" class="source-tab" data-source="X">🐦 X保存</button>
+        <button type="button" class="source-tab" data-source="Memo">📝 雑メモ</button>
+      </div>
+      <div class="result-meta" id="resultMeta">8件ヒット ・ 0.12秒（ローカル検索）</div>
+    </section>
+
+    <!-- Cards -->
+    <section class="cards-grid" id="cardsGrid"></section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const MOCK_ITEMS = [
+      {
+        id: 1,
+        source: "Chrome",
+        folder: "あとで読む / ビジネス",
+        title: "健康・脳科学・教育系発信と脱Google広告の信頼複利戦略",
+        summary: "AdSenseの規約が厳しいジャンルこそ短期勢が撤退し、誠実な発信が『信頼残高』として複利で積み上がる逆転戦略のまとめ。",
+        tags: ["健康", "脳科学", "広告", "信頼複利", "note"],
+        domain: "local / Aria_Cute",
+        score: 98,
+        url: "#"
+      },
+      {
+        id: 2,
+        source: "Chrome",
+        folder: "開発メモ / Python",
+        title: "NumPyベクトル検索とSQLiteで1万件を5msで引く軽量ハイブリッド検索設計",
+        summary: "重いベクトルDBサーバーを立てずに、EmbeddingGemma-2の埋め込みを.npzでキャッシュして爆速検索する実装パターン。",
+        tags: ["Python", "高速化", "NumPy", "ベクトル検索"],
+        domain: "zenn.dev",
+        score: 95,
+        url: "#"
+      },
+      {
+        id: 3,
+        source: "X",
+        folder: "X ブックマーク",
+        title: "決算発表後のドリフト（PEAD）で期待値が伸びる銘柄の共通パターン解説スレッド",
+        summary: "好決算の翌日に飛びつくのではなく、出来高とガイダンス修正の質を見て数日間のモメンタムを拾うクオンツ視点の解説。",
+        tags: ["投資", "決算", "PEAD", "クオンツ"],
+        domain: "x.com",
+        score: 93,
+        url: "#"
+      },
+      {
+        id: 4,
+        source: "Memo",
+        folder: "投げ込みメモ",
+        title: "「あれどこだっけ？」AI記憶庫（脱・ブックマーク整理）企画書",
+        summary: "フォルダ分けの手間が再検索コストを上回る現代に向けた、整理ゼロ＆曖昧な日本語で0.5秒想起する日本発ローカルSecond Brain構想。",
+        tags: ["ブックマーク", "企画", "ローカルAI", "SecondBrain"],
+        domain: "local / Aria_Cute",
+        score: 97,
+        url: "#"
+      },
+      {
+        id: 5,
+        source: "Edge",
+        folder: "お気に入り / 仕事",
+        title: "FastAPI + Uvicorn でWindowsローカルWebアプリを1ファイル起動するベストプラクティス",
+        summary: "静的HTML配信と非同期バックグラウンド処理を1プロセスにまとめ、純ASCIIバッチファイルからワンクリック起動する構成。",
+        tags: ["FastAPI", "Python", "Windows", "ローカルWeb"],
+        domain: "fastapi.tiangolo.com",
+        score: 89,
+        url: "#"
+      },
+      {
+        id: 6,
+        source: "Chrome",
+        folder: "カオスフォルダ(未整理)",
+        title: "睡眠と自律神経の回復ルーティン：夜のブルーライトと体温低下の関係",
+        summary: "就寝90分前の入浴で深部体温を下げると副交感神経が優位になり、入眠潜時が短縮される脳科学エビデンスの解説記事。",
+        tags: ["健康", "睡眠", "脳科学", "自律神経"],
+        domain: "note.com",
+        score: 86,
+        url: "#"
+      },
+      {
+        id: 7,
+        source: "X",
+        folder: "X ブックマーク",
+        title: "ChromeとEdgeのBookmarks JSON構造が完全互換な理由と安全な読み取り方",
+        summary: "Chromium系ブラウザはUser Data/Default/Bookmarksに同一スキーマで保存されるため、読み取り専用コピーで安全に同期可能。",
+        tags: ["Chrome", "Edge", "ブックマーク", "JSON"],
+        domain: "x.com",
+        score: 91,
+        url: "#"
+      },
+      {
+        id: 8,
+        source: "Memo",
+        folder: "投げ込みメモ",
+        title: "今度試したい：ホットチョコバナナとシナモンの簡単カフェレシピ",
+        summary: "温めたミルクにダークチョコを溶かして、輪切りバナナを少しだけキャラメリゼすると香ばしくて最高らしい。",
+        tags: ["カフェ", "レシピ", "おやつ"],
+        domain: "memo / personal",
+        score: 82,
+        url: "#"
+      }
+    ];
+
+    let items = [...MOCK_ITEMS];
+    let currentSource = "all";
+    let rerankOn = true;
+    let enrichPct = 68;
+
+    const cardsGrid = document.getElementById("cardsGrid");
+    const searchInput = document.getElementById("searchInput");
+    const resultMeta = document.getElementById("resultMeta");
+    const countPill = document.getElementById("countPill");
+    const toastEl = document.getElementById("toast");
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+    }
+
+    function sourceEmoji(src) {
+      return { Chrome: "🌐", Edge: "🌀", X: "🐦", Memo: "📝" }[src] || "📄";
+    }
+
+    function render() {
+      const q = searchInput.value.trim().toLowerCase();
+      const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+
+      const filtered = items
+        .filter(item => currentSource === "all" || item.source === currentSource)
+        .map(item => {
+          if (!tokens.length) return { ...item, displayScore: item.score };
+          const hay = `${item.title} ${item.summary} ${item.tags.join(" ")} ${item.folder}`.toLowerCase();
+          let hit = 0;
+          for (const t of tokens) {
+            if (hay.includes(t)) hit += 1;
+          }
+          // 曖昧一致のモック演出（文字単位でも部分マッチ）
+          if (hit === 0) {
+            const chars = q.replace(/\s+/g, "").split("");
+            const charHits = chars.filter(c => hay.includes(c)).length;
+            if (charHits >= Math.max(2, Math.ceil(chars.length * 0.6))) {
+              return { ...item, displayScore: Math.min(88, 65 + charHits * 4) };
+            }
+            return null;
+          }
+          const boost = rerankOn ? 4 : 0;
+          return { ...item, displayScore: Math.min(99, 78 + hit * 9 + boost) };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.displayScore - a.displayScore);
+
+      countPill.textContent = `📚 記憶 ${items.length}件（プレビュー）`;
+      const elapsed = rerankOn ? "0.24秒（ハイブリッド＋AIリランク）" : "0.08秒（高速ベクトル検索）";
+      resultMeta.textContent = `${filtered.length}件ヒット ・ ${elapsed}`;
+
+      if (!filtered.length) {
+        cardsGrid.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size:28px;margin-bottom:8px;">🫧</div>
+            <strong>「${q}」に合う記憶はまだ見つかりませんでした</strong><br />
+            <span style="font-size:13px;">別の言い回しで試すか、上の「投げ込み箱」から新しく記憶してみてくださいね。</span>
+          </div>
+        `;
+        return;
+      }
+
+      cardsGrid.innerHTML = filtered.map(item => `
+        <a class="memory-card" href="${item.url}" onclick="event.preventDefault(); showToast('🔗 「${item.title.slice(0, 22)}…」を開く動作（本番でURLへ移動）');">
+          <div class="card-top">
+            <span class="card-source">${sourceEmoji(item.source)} ${item.source} ・ ${item.folder}</span>
+            <span class="score-badge">一致 ${item.displayScore}%</span>
+          </div>
+          <h3 class="card-title">${item.title}</h3>
+          <p class="card-summary">${item.summary}</p>
+          <div class="card-footer">
+            <div class="tag-list">
+              ${item.tags.map(t => `<span class="tag">#${t}</span>`).join("")}
+            </div>
+            <span class="card-domain">${item.domain}</span>
+          </div>
+        </a>
+      `).join("");
+    }
+
+    // Theme Switcher
+    document.querySelectorAll("[data-set-theme]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const theme = btn.dataset.setTheme;
+        document.documentElement.setAttribute("data-theme", theme);
+        document.querySelectorAll("[data-set-theme]").forEach(b => b.classList.toggle("active", b === btn));
+
+        if (theme === "sweet") {
+          document.getElementById("brandIcon").textContent = "🌸";
+          document.getElementById("heroCopy").innerHTML = "フォルダ分けしなくていい。<br />曖昧な記憶のまま、聞いてみてね。";
+          showToast("🎀 パターン1：アリアちゃんスイート系に切り替えました");
+        } else {
+          document.getElementById("brandIcon").textContent = "🫧";
+          document.getElementById("heroCopy").innerHTML = "No more bookmark folders.<br />曖昧な記憶から、0.5秒で引き出す。";
+          showToast("✨ パターン2：パステル・グラス系に切り替えました");
+        }
+      });
+    });
+
+    // Search
+    document.getElementById("searchForm").addEventListener("submit", e => {
+      e.preventDefault();
+      render();
+    });
+    searchInput.addEventListener("input", render);
+
+    document.querySelectorAll(".prompt-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        searchInput.value = chip.dataset.q;
+        render();
+      });
+    });
+
+    // Rerank Toggle
+    document.getElementById("rerankBtn").addEventListener("click", e => {
+      rerankOn = !rerankOn;
+      e.currentTarget.classList.toggle("active", rerankOn);
+      e.currentTarget.textContent = rerankOn ? "🐠 AI精密リランク ON" : "⚡ 高速検索モード";
+      render();
+    });
+
+    // Source Tabs
+    document.querySelectorAll(".source-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        currentSource = tab.dataset.source;
+        document.querySelectorAll(".source-tab").forEach(t => t.classList.toggle("active", t === tab));
+        render();
+      });
+    });
+
+    // Quick Drop Mock
+    document.getElementById("dropForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const input = document.getElementById("dropInput");
+      const val = input.value.trim();
+      if (!val) return;
+      const isUrl = /^https?:\/\//i.test(val);
+      items.unshift({
+        id: Date.now(),
+        source: "Memo",
+        folder: "たった今 投げ込み",
+        title: val,
+        summary: isUrl
+          ? "URLを記憶庫へ追加しました（本番では裏でページ概要と連想タグを自動生成します）。"
+          : "雑メモをそのままベクトル記憶庫へ保存しました。あとで曖昧に思い出せます！",
+        tags: isUrl ? ["URL保存", "新着"] : ["雑メモ", "新着"],
+        domain: isUrl ? val.replace(/^https?:\/\//i, "").split("/")[0] : "memo / just now",
+        score: 99,
+        url: "#"
+      });
+      input.value = "";
+      render();
+      showToast("✨ 記憶庫にぽんっと追加しました！");
+    });
+
+    // Sync & Enrich Mock Buttons
+    document.getElementById("syncChromeBtn").addEventListener("click", () => {
+      showToast("🌐 本番では Chrome の Bookmarks JSON を読み取り専用で即同期します！");
+    });
+    document.getElementById("syncEdgeBtn").addEventListener("click", () => {
+      showToast("🌀 本番では Edge の Bookmarks JSON もワンクリックで同期します！");
+    });
+    document.getElementById("enrichBtn").addEventListener("click", () => {
+      enrichPct = enrichPct >= 100 ? 68 : Math.min(100, enrichPct + 16);
+      document.getElementById("enrichFill").style.width = enrichPct + "%";
+      document.getElementById("enrichText").textContent = `AI要約済み ${enrichPct}%`;
+      showToast(`✨ Port 1918 で要約エンリッチ進行中…（${enrichPct}%）`);
+    });
+
+    render();
+  </script>
+</body>
+</html>
